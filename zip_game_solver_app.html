@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Zip Game Solver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .grid-container {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .grid-header h2 {
+            color: #f1f5f9;
+            font-size: 1.5rem;
+        }
+
+        .grid-size-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .grid-size-controls label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .grid-size-controls input {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0;
+            text-align: center;
+        }
+
+        .game-grid {
+            display: inline-grid;
+            gap: 2px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .grid-cell {
+            width: 50px;
+            height: 50px;
+            background: rgba(51, 65, 85, 0.8);
+            border: 2px solid rgba(100, 116, 139, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .grid-cell:hover {
+            background: rgba(100, 116, 139, 0.4);
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .grid-cell.has-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .grid-cell.solution-path {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: #22c55e;
+        }
+
+        .grid-cell.solution-visited {
+            background: rgba(34, 197, 94, 0.6);
+            border-color: #16a34a;
+        }
+
+        .grid-cell.current-step {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .border-line {
+            position: absolute;
+            background: #ef4444;
+            z-index: 10;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .border-line:hover {
+            background: #dc2626;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .border-line.horizontal {
+            height: 4px;
+            width: 50px;
+            border-radius: 2px;
+        }
+
+        .border-line.vertical {
+            width: 4px;
+            height: 50px;
+            border-radius: 2px;
+        }
+
+        .border-click-area {
+            background: transparent;
+            transition: background 0.2s ease;
+        }
+
+        .border-click-area:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-radius: 2px;
+        }
+
+        .controls-panel {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            height: fit-content;
+        }
+
+        .controls-section {
+            margin-bottom: 30px;
+        }
+
+        .controls-section h3 {
+            color: #f1f5f9;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            background: rgba(30, 41, 59, 0.8);
+            color: #94a3b8;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: rgba(100, 116, 139, 0.3);
+            border-color: #667eea;
+        }
+
+        .solver-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .solver-setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .solver-setting label {
+            color: #94a3b8;
+        }
+
+        .solver-setting select,
+        .solver-setting input {
+            padding: 8px 12px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 116, 139, 0.3);
+            border-color: #667eea;
+        }
+
+        .status-panel {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .status-panel h4 {
+            color: #f1f5f9;
+            margin-bottom: 10px;
+        }
+
+        .status-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LinkedIn Zip Game Solver</h1>
+            <p>Set up your puzzle and let AI solve it for you - <a href="https://www.linkedin.com/games/zip/" target="_blank" style="color: #667eea; text-decoration: none;">daily puzzle found here</a></p>
+        </div>
+
+        <div class="main-content">
+            <div class="grid-container">
+                <div class="grid-header">
+                    <h2>Puzzle Grid</h2>
+                    <div class="grid-size-controls">
+                        <label>Rows:</label>
+                        <input type="number" id="rows-input" value="6" min="3" max="8">
+                        <label>Cols:</label>
+                        <input type="number" id="cols-input" value="6" min="3" max="8">
+                        <button class="btn btn-secondary" onclick="updateGridSize()" style="padding: 8px 12px; font-size: 0.8rem;">Update</button>
+                    </div>
+                </div>
+                
+                <div class="game-grid" id="game-grid">
+                    <!-- Grid cells will be generated here -->
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="controls-section">
+                    <h3>Set Up Puzzle</h3>
+                    <div class="mode-selector">
+                        <div class="mode-btn active" onclick="setMode('number')" id="number-mode">Add Numbers</div>
+                        <div class="mode-btn" onclick="setMode('border')" id="border-mode">Add Borders</div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h3>Solver Settings</h3>
+                    <div class="solver-controls">
+                        <div class="solver-setting">
+                            <label>Solver:</label>
+                            <select id="solver-select">
+                                <option value="highs">Highs</option>
+                                <option value="gecode">Gecode</option>
+                                <option value="chuffed" selected>Chuffed</option>
+                            </select>
+                        </div>
+                        <div class="solver-setting">
+                            <label>Time Limit (s):</label>
+                            <input type="number" id="time-limit" value="10" min="1" max="300">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="solvePuzzle()" id="solve-btn">
+                            Solve Puzzle
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearGrid()">
+                            Clear All
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadExample()">
+                            Load Example
+                        </button>
+                    </div>
+                </div>
+
+                <div class="status-panel">
+                    <h4>Status</h4>
+                    <div class="status-text" id="status-text">
+                        Ready - Click to place numbers or draw borders
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Global variables
+        let currentMode = 'number';
+        let currentNumber = 1;
+        let gridData = {
+            rows: 6,
+            cols: 6,
+            numbers: {},
+            borders: []
+        };
+        let solution = null;
+        let animationInterval = null;
+        let MiniZinc = null;
+        let minizincReady = false;
+        let lastPuzzleState = null;
+
+        // Make functions available globally
+        window.updateGridSize = updateGridSize;
+        window.setMode = setMode;
+        window.clearGrid = clearGrid;
+        window.loadExample = loadExample;
+        window.solvePuzzle = solvePuzzle;
+
+        function updateStatus(message) {
+            console.log('Status:', message);
+            document.getElementById('status-text').textContent = message;
+        }
+
+        // Grid management functions
+        function initializeGrid() {
+            updateGridSize();
+        }
+
+        function updateGridSize() {
+            let rows = parseInt(document.getElementById('rows-input').value);
+            let cols = parseInt(document.getElementById('cols-input').value);
+            
+            // Enforce limits
+            rows = Math.max(3, Math.min(8, rows));
+            cols = Math.max(3, Math.min(8, cols));
+            
+            // Update input fields to show corrected values
+            document.getElementById('rows-input').value = rows;
+            document.getElementById('cols-input').value = cols;
+            
+            gridData.rows = rows;
+            gridData.cols = cols;
+            gridData.numbers = {};
+            gridData.borders = [];
+            currentNumber = 1;
+            solution = null;
+            lastPuzzleState = null;
+            
+            createGrid();
+            updateStatus('Grid updated - Ready to set up puzzle');
+        }
+
+        function createGrid() {
+            const gridElement = document.getElementById('game-grid');
+            gridElement.innerHTML = '';
+            gridElement.style.gridTemplateColumns = `repeat(${gridData.cols}, 1fr)`;
+            
+            for (let row = 1; row <= gridData.rows; row++) {
+                for (let col = 1; col <= gridData.cols; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.onclick = () => handleCellClick(row, col);
+                    gridElement.appendChild(cell);
+                }
+            }
+            
+            createBorderClickAreas();
+        }
+
+        function createBorderClickAreas() {
+            const gridElement = document.getElementById('game-grid');
+            const cellSize = 52;
+            
+            // Horizontal border areas
+            for (let row = 1; row < gridData.rows; row++) {
+                for (let col = 1; col <= gridData.cols; col++) {
+                    const borderArea = document.createElement('div');
+                    borderArea.className = 'border-click-area horizontal';
+                    borderArea.onclick = (e) => {
+                        e.stopPropagation();
+                        handleBorderClick(row, col, row + 1, col);
+                    };
+                    
+                    borderArea.style.position = 'absolute';
+                    borderArea.style.left = `${(col - 1) * cellSize + 20}px`;
+                    borderArea.style.top = `${row * cellSize + 12}px`;
+                    borderArea.style.width = '50px';
+                    borderArea.style.height = '8px';
+                    borderArea.style.cursor = 'pointer';
+                    borderArea.style.zIndex = '20';
+                    
+                    gridElement.appendChild(borderArea);
+                }
+            }
+            
+            // Vertical border areas
+            for (let row = 1; row <= gridData.rows; row++) {
+                for (let col = 1; col < gridData.cols; col++) {
+                    const borderArea = document.createElement('div');
+                    borderArea.className = 'border-click-area vertical';
+                    borderArea.onclick = (e) => {
+                        e.stopPropagation();
+                        handleBorderClick(row, col, row, col + 1);
+                    };
+                    
+                    borderArea.style.position = 'absolute';
+                    borderArea.style.left = `${col * cellSize + 12}px`;
+                    borderArea.style.top = `${(row - 1) * cellSize + 20}px`;
+                    borderArea.style.width = '8px';
+                    borderArea.style.height = '50px';
+                    borderArea.style.cursor = 'pointer';
+                    borderArea.style.zIndex = '20';
+                    
+                    gridElement.appendChild(borderArea);
+                }
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('number-mode').classList.toggle('active', mode === 'number');
+            document.getElementById('border-mode').classList.toggle('active', mode === 'border');
+            
+            if (mode === 'number') {
+                updateStatus(`Add Numbers mode - Click cells to place number ${currentNumber}`);
+            } else {
+                updateStatus('Add Borders mode - Click between cells to add/remove borders');
+            }
+        }
+
+        function handleCellClick(row, col) {
+            if (currentMode === 'number') {
+                if (gridData.numbers[currentNumber] && 
+                    gridData.numbers[currentNumber][0] === row && 
+                    gridData.numbers[currentNumber][1] === col) {
+                    delete gridData.numbers[currentNumber];
+                    currentNumber = Math.max(1, currentNumber - 1);
+                } else {
+                    for (let [num, pos] of Object.entries(gridData.numbers)) {
+                        if (pos[0] === row && pos[1] === col) {
+                            delete gridData.numbers[num];
+                            break;
+                        }
+                    }
+                    gridData.numbers[currentNumber] = [row, col];
+                    currentNumber++;
+                }
+                renderNumbers();
+                updateStatus(`Add Numbers mode - Click cells to place number ${currentNumber}`);
+            }
+        }
+
+        function handleBorderClick(row1, col1, row2, col2) {
+            if (currentMode !== 'border') return;
+            
+            const borderIndex = gridData.borders.findIndex(border => 
+                (border[0][0] === row1 && border[0][1] === col1 && border[1][0] === row2 && border[1][1] === col2) ||
+                (border[0][0] === row2 && border[0][1] === col2 && border[1][0] === row1 && border[1][1] === col1)
+            );
+            
+            if (borderIndex !== -1) {
+                gridData.borders.splice(borderIndex, 1);
+            } else {
+                gridData.borders.push([[row1, col1], [row2, col2]]);
+            }
+            
+            renderBorders();
+            updateStatus(`Add Borders mode - ${gridData.borders.length} borders placed`);
+        }
+
+        function renderNumbers() {
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('has-number');
+                cell.textContent = '';
+            });
+            
+            for (let [number, [row, col]] of Object.entries(gridData.numbers)) {
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (cell) {
+                    cell.classList.add('has-number');
+                    cell.textContent = number;
+                }
+            }
+        }
+
+        function renderBorders() {
+            document.querySelectorAll('.border-line').forEach(border => {
+                border.remove();
+            });
+            
+            const gridElement = document.getElementById('game-grid');
+            const cellSize = 52;
+            
+            gridData.borders.forEach(([[row1, col1], [row2, col2]]) => {
+                const borderLine = document.createElement('div');
+                borderLine.className = 'border-line';
+                borderLine.onclick = (e) => {
+                    e.stopPropagation();
+                    handleBorderClick(row1, col1, row2, col2);
+                };
+                
+                if (row1 === row2) {
+                    borderLine.classList.add('vertical');
+                    const minCol = Math.min(col1, col2);
+                    borderLine.style.position = 'absolute';
+                    borderLine.style.left = `${minCol * cellSize + 12}px`;
+                    borderLine.style.top = `${(row1 - 1) * cellSize + 20}px`;
+                } else {
+                    borderLine.classList.add('horizontal');
+                    const minRow = Math.min(row1, row2);
+                    borderLine.style.position = 'absolute';
+                    borderLine.style.left = `${(col1 - 1) * cellSize + 20}px`;
+                    borderLine.style.top = `${minRow * cellSize + 12}px`;
+                }
+                
+                gridElement.appendChild(borderLine);
+            });
+        }
+
+        function clearGrid() {
+            gridData.numbers = {};
+            gridData.borders = [];
+            currentNumber = 1;
+            solution = null;
+            lastPuzzleState = null;
+            
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.className = 'grid-cell';
+                cell.textContent = '';
+            });
+            
+            document.querySelectorAll('.border-line').forEach(border => {
+                border.remove();
+            });
+            
+            updateStatus('Grid cleared - Ready to set up new puzzle');
+        }
+
+        function loadExample() {
+            // First, set grid size to 6x6 if it's not already
+            if (gridData.rows !== 6 || gridData.cols !== 6) {
+                document.getElementById('rows-input').value = 6;
+                document.getElementById('cols-input').value = 6;
+                updateGridSize(); // This will clear the grid and reset everything
+            } else {
+                clearGrid(); // Just clear if already 6x6
+            }
+            
+            gridData.numbers = {
+                1: [2, 5],
+                2: [5, 2], 
+                3: [6, 6],
+                4: [3, 1],
+                5: [1, 1],
+                6: [4, 6]
+            };
+            
+            gridData.borders = [
+                [[1,3],[2,3]], [[1,4],[2,4]],
+                [[2,3],[3,3]], [[2,4],[3,4]],
+                [[3,3],[4,3]], [[3,4],[4,4]],
+                [[4,3],[5,3]], [[4,4],[5,4]],
+                [[5,3],[6,3]], [[5,4],[6,4]]
+            ];
+            
+            currentNumber = 7;
+            renderNumbers();
+            renderBorders();
+            updateStatus('Example loaded - Ready to solve!');
+        }
+
+        // WORKING SOLVER FUNCTIONS FROM simple_zip_solver_test.html (UNCHANGED)
+        function getAdjacentCells(row, col, nrows, ncols, borders) {
+            let adj = [[row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]];
+            adj = adj.filter(([i, j]) => i >= 1 && i <= nrows && j >= 1 && j <= ncols);
+            adj = adj.filter(([i, j]) => {
+                const border1 = borders.some(border => 
+                    (border[0][0] === row && border[0][1] === col && border[1][0] === i && border[1][1] === j)
+                );
+                const border2 = borders.some(border => 
+                    (border[0][0] === i && border[0][1] === j && border[1][0] === row && border[1][1] === col)
+                );
+                return !border1 && !border2;
+            });
+            return adj;
+        }
+
+        function cellEncodingDecodingMaps(nrows, ncols) {
+            const encoding = {};
+            const decoding = {};
+            let k = 1;
+            for (let i = 1; i <= nrows; i++) {
+                for (let j = 1; j <= ncols; j++) {
+                    const key = `${i},${j}`;
+                    encoding[key] = k;
+                    decoding[k] = [i, j];
+                    k++;
+                }
+            }
+            return { encoding, decoding };
+        }
+
+        function buildModelInputs(nrows, ncols, numberPositions, borders) {
+            const { encoding: encode, decoding: decode } = cellEncodingDecodingMaps(nrows, ncols);
+            const nVertices = Object.keys(encode).length;
+            const nNumbers = Object.keys(numberPositions).length;
+            
+            const adjacent = [];
+            for (const k of Object.keys(decode)) {
+                const [i, j] = decode[k];
+                const adjCells = getAdjacentCells(i, j, nrows, ncols, borders);
+                const adjSet = new Set(adjCells.map(([row, col]) => encode[`${row},${col}`]));
+                adjacent.push(adjSet);
+            }
+            
+            const numLoc = [];
+            const sortedKeys = Object.keys(numberPositions).map(Number).sort((a, b) => a - b);
+            for (const i of sortedKeys) {
+                const [row, col] = numberPositions[i];
+                numLoc.push(encode[`${row},${col}`]);
+            }
+            
+            return { nVertices, nNumbers, adjacent, numLoc, encode, decode };
+        }
+
+        async function solve(nrows, ncols, numberPositions, borders, useSolver = 'gecode', timlimSeconds = 30) {
+            const { nVertices, nNumbers, adjacent, numLoc, encode, decode } = buildModelInputs(
+                nrows, ncols, numberPositions, borders
+            );
+            
+            const model = new MiniZinc.Model();
+            
+            const zipModelContent = `
+include "alldifferent.mzn";
+int: Nv;
+int: Nn;
+array[1..Nv] of set of int: adjacent;
+array[1..Nn] of int: num_loc;
+array[1..Nv] of var 1..Nv: step;
+array[1..Nn] of var 1..Nv: num_step;
+constraint (step[1] == num_loc[1]);
+constraint (step[Nv] == num_loc[Nn]);
+constraint forall(k in 1..Nv-1) (step[k + 1] in adjacent[step[k]]);
+constraint forall(i in 1..Nn, k in 1..Nv) ((step[k] == num_loc[i]) <-> (num_step[i] == k));
+constraint forall(i in 1..Nn-1) (num_step[i] < num_step[i + 1]);
+constraint (alldifferent(step));
+solve satisfy;
+            `;
+            
+            model.addString(zipModelContent);
+            
+            const adjacentFormatted = adjacent.map(adj => `{${Array.from(adj).join(',')}}`).join(',');
+            const dznData = `
+Nv = ${nVertices};
+Nn = ${nNumbers};
+adjacent = [${adjacentFormatted}];
+num_loc = [${numLoc.join(',')}];
+            `;
+            
+            model.addDznString(dznData);
+            
+            const result = await model.solve({
+                options: {
+                    solver: useSolver,
+                    'time-limit': timlimSeconds * 1000
+                }
+            });
+            
+            const sol = [];
+            let pos = 1;
+            for (const v of result.solution.output.json.step) {
+                sol.push([decode[v], pos]);
+                pos += 1;
+            }
+              
+            return sol.sort((a, b) => a[1] - b[1]);
+        }
+
+        // AUTO-INITIALIZE MiniZinc WebAssembly
+        async function initializeMiniZinc() {
+            if (minizincReady) return;
+            
+            try {
+                console.log('Initializing MiniZinc WebAssembly...');
+                const minizincModule = await import('https://cdn.jsdelivr.net/npm/minizinc/dist/minizinc.mjs');
+                MiniZinc = minizincModule;
+                await MiniZinc.init();
+                minizincReady = true;
+                console.log('MiniZinc WebAssembly ready!');
+            } catch (error) {
+                console.error('Failed to initialize MiniZinc:', error);
+                throw error;
+            }
+        }
+
+        // MAIN SOLVE FUNCTION WITH AUTO-ANIMATION
+        async function solvePuzzle() {
+            if (Object.keys(gridData.numbers).length < 2) {
+                updateStatus('Error: Need at least 2 numbers to solve');
+                return;
+            }
+            
+            const solveBtn = document.getElementById('solve-btn');
+            solveBtn.disabled = true;
+            solveBtn.textContent = 'Solving...';
+            
+            try {
+                // Check if puzzle has changed
+                const currentPuzzleState = JSON.stringify({
+                    rows: gridData.rows,
+                    cols: gridData.cols,
+                    numbers: gridData.numbers,
+                    borders: gridData.borders
+                });
+                
+                const puzzleChanged = currentPuzzleState !== lastPuzzleState;
+                
+                if (!puzzleChanged && solution) {
+                    // Puzzle unchanged, just animate existing solution
+                    updateStatus('Using existing solution - Starting animation...');
+                    startAnimation();
+                } else {
+                    // Puzzle changed or no previous solution, need to solve
+                    
+                    // Auto-initialize MiniZinc before solving
+                    if (!minizincReady) {
+                        updateStatus('Initializing MiniZinc WebAssembly...');
+                        await initializeMiniZinc();
+                    }
+                    
+                    updateStatus('Solving with MiniZinc WebAssembly...');
+                    
+                    // Convert UI data to solver format
+                    const nrows = gridData.rows;
+                    const ncols = gridData.cols;
+                    
+                    const numberPositions = {};
+                    for (let [num, pos] of Object.entries(gridData.numbers)) {
+                        numberPositions[parseInt(num)] = pos;
+                    }
+                    
+                    const borders = gridData.borders;
+                    const useSolver = document.getElementById('solver-select').value;
+                    const timlimSeconds = parseInt(document.getElementById('time-limit').value);
+                    
+                    console.log('Calling solve with:', { nrows, ncols, numberPositions, borders, useSolver, timlimSeconds });
+                    
+                    // Call the working solve function
+                    solution = await solve(nrows, ncols, numberPositions, borders, useSolver, timlimSeconds);
+                    lastPuzzleState = currentPuzzleState;
+                    
+                    console.log('Solution received:', solution);
+                    updateStatus(`✅ Solution found! Starting animation...`);
+                    
+                    // Immediately start animation after solving
+                    startAnimation();
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Solver Error: ${error.message}`);
+                console.error('Solver error:', error);
+            } finally {
+                solveBtn.disabled = false;
+                solveBtn.textContent = 'Solve Puzzle';
+            }
+        }
+
+        // ANIMATION WITH VISUAL TRAIL
+        function startAnimation() {
+            if (!solution) return;
+            
+            // Clear any existing animation
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+            
+            // Clear all solution classes
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('solution-path', 'solution-visited', 'current-step');
+            });
+            
+            let currentStepIndex = 0;
+            
+            animationInterval = setInterval(() => {
+                if (currentStepIndex < solution.length) {
+                    const [[row, col], stepNumber] = solution[currentStepIndex];
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    
+                    if (cell) {
+                        // Remove current-step from all cells and mark them as visited
+                        document.querySelectorAll('.current-step').forEach(prevCell => {
+                            prevCell.classList.remove('current-step');
+                            prevCell.classList.add('solution-visited');
+                        });
+                        
+                        // Add current-step to new cell
+                        cell.classList.add('current-step');
+                    }
+                    
+                    updateStatus(`Animation: Step ${stepNumber} of ${solution.length} - Cell (${row}, ${col})`);
+                    currentStepIndex++;
+                } else {
+                    // Animation complete
+                    clearInterval(animationInterval);
+                    animationInterval = null;
+                    
+                    // Reset all cells to final solution path appearance
+                    document.querySelectorAll('.grid-cell').forEach(cell => {
+                        cell.classList.remove('solution-visited', 'current-step');
+                    });
+                    
+                    solution.forEach(([[row, col], step]) => {
+                        const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                        if (cell) {
+                            cell.classList.add('solution-path');
+                        }
+                    });
+                    
+                    updateStatus(`✅ Animation complete - Solution path shown (${solution.length} steps)`);
+                }
+            }, 400); // Fast animation - 400ms intervals
+        }
+
+        // Initialize the app
+        window.onload = function() {
+            initializeGrid();
+            updateStatus('Ready - Click to place numbers or draw borders');
+        };
+    </script>
+</body>
+</html>
